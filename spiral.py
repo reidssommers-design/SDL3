@@ -91,10 +91,9 @@ def make_outline(tracks, vias, margin_mm=4, line_mm=0.1):
 def get_params():
     cx   = float(input('Enter the x center [100]: ') or 100)
     cy   = float(input('Enter the y center [100]: ') or 100)
-    r_in = float(input('Enter inner radius: ') or 2)       # mm
-    p    = float(input('Enter the pitch: ') or 0.5)        # mm
-    n    = int(input('Enter the number of turns: ') or 20) # integer
-
+    r_in = float(input('Enter inner radius [2]: ') or 2)        # mm
+    p    = float(input('Enter the pitch [0.5]: ') or 0.5)       # mm
+    n    = int(input('Enter the number of turns [20]: ') or 20) # integer
     l    = float(input('Enter the length of test pad: ') or 5)
 
     return cx, cy, r_in, p, n, l
