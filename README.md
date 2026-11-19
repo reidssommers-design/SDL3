@@ -4,12 +4,12 @@ A KiCad plugin that turns six numbers into a complete planar spiral-inductor boa
 return path, probe-ready test pads, board outline and silkscreen label. It estimates the
 inductance live as you type, before a single track is placed.
 
-![The plugin window, the generated board in the PCB editor, and the 3D viewer](images/Whole_View.png)
+![The plugin window, the generated board in the PCB editor, and the 3D viewer](images/PCB_Editor.png)
 
 <p align="center">
-  <img src="images/Coil_PCB.png" alt="Generated coil in the PCB editor" width="45%">
-  <img src="images/Coil_3D.png" alt="Same board in KiCad's 3D viewer" width="45%">
-</p>
+  <img src="images/Coil_PCB.png" alt="Generated coil in the PCB editor" width="37%">
+  <img src="images/Coil_3D.png" alt="Same board in KiCad's 3D viewer" width="37%">
+  <img src="images/GUI.png" alt="Python GUI to adjust coil" width="25%">
 
 ## Why
 
