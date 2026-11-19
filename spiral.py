@@ -30,7 +30,7 @@ def make_via(x, y, drill_mm=0.3, pad_mm=0.6, mask_mm=None):
     for layer in v.padstack.copper_layers:
         layer.size = Vector2.from_xy_mm(pad_mm, pad_mm)
 
-    if mask_mm is not None:     # untent both sides, opening = pad + 2*mask_mm
+    if mask_mm is not None:     # untent front side, opening = pad + 2*mask_mm
         v.padstack.front_outer_layers.solder_mask_mode = SolderMaskMode.SMM_UNMASKED
         v.padstack.front_outer_layers.solder_mask_settings.solder_mask_margin = from_mm(mask_mm)
 
@@ -102,7 +102,25 @@ def calc_spiral(cx, cy, r_in, p, n):
 
     return pts
 
+def erase_board():
+    items = (
+        board.get_footprints()
+        + board.get_tracks()
+        + board.get_vias()
+        + board.get_zones()
+        + board.get_shapes()
+        + board.get_text()
+    )
+
+    commit = board.begin_commit()
+    board.remove_items(items)
+    board.push_commit(commit, "Erase entire PCB")
+
 def main():
+    erase = input('Do you want to erase the board? (yes/n) ')
+    if erase == 'yes':
+        erase_board()
+
     cx, cy, r_in, p, n, l = get_params()
 
     pts = calc_spiral(cx, cy, r_in, p, n)
