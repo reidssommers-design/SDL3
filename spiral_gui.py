@@ -29,7 +29,11 @@ for i, (key, label, default, _) in enumerate(FIELDS):
     ttk.Entry(frm, textvariable=var, width=10).grid(row=i, column=1)
     entries[key] = var
 
-row = len(FIELDS)
+title = tk.StringVar()
+ttk.Label(frm, text='Title (blank = none)').grid(row=len(FIELDS), column=0, sticky='w', padx=(0, 10))
+ttk.Entry(frm, textvariable=title, width=20).grid(row=len(FIELDS), column=1)
+
+row = len(FIELDS) + 1
 
 L_text = tk.StringVar()
 ttk.Label(frm, textvariable=L_text, font=('TkDefaultFont', 11, 'bold')).grid(
@@ -80,7 +84,8 @@ def refresh():
         if erase.get():
             spiral.erase_board()
         L = spiral.build(v['cx'], v['cy'], v['r_in'], v['p'], v['n'], v['l'],
-                         label=label.get(), msg='Spiral GUI refresh')
+                         label=label.get(), title=title.get().strip(),
+                         msg='Spiral GUI refresh')
         status.set(f'Board updated  (L = {L*1e6:.4f} µH)')
     except Exception as e:
         status.set('Failed')

@@ -113,6 +113,25 @@ def make_label(edge, w, p, n, L, size_mm=1.0, inset_mm=1.0):
 
     return t
 
+def make_title(edge, text, size_mm=1.5, inset_mm=1.0):
+    # silkscreen title, anchored to the outline's upper-right corner
+    t = BoardText()
+    t.value = text
+    t.layer = BoardLayer.BL_F_SilkS
+
+    inset = from_mm(inset_mm)
+    t.position = Vector2.from_xy(edge.bottom_right.x - inset, edge.top_left.y + inset)
+
+    a = t.attributes
+    a.multiline = True          # '\n' in the title would technically work
+    a.line_spacing = 1.0
+    a.size = Vector2.from_xy_mm(size_mm, size_mm)
+    a.stroke_width = from_mm(0.2)
+    a.horizontal_alignment = HorizontalAlignment.HA_RIGHT
+    a.vertical_alignment   = VerticalAlignment.VA_TOP
+
+    return t
+
 def get_params():
     cx   = float(input('Enter the x center [100]: ') or 100)
     cy   = float(input('Enter the y center [100]: ') or 100)
@@ -123,8 +142,9 @@ def get_params():
     l    = float(input('Enter the length of test pad: ') or 5)
 
     label = (input('Print info label? (y/n) [y]: ') or 'y') == 'y'
+    title = input('Title (blank for none): ').strip()
 
-    return cx, cy, r_in, p, n, l, label
+    return cx, cy, r_in, p, n, l, label, title
 
 def calc_spiral(cx, cy, r_in, p, n):
     th = np.linspace(0, 2*np.pi*n, n*SEG + 1)
@@ -147,7 +167,7 @@ def erase_board():
     board.remove_items(items)
     board.push_commit(commit, "Erase entire PCB")
 
-def build(cx, cy, r_in, p, n, l, label=True, msg='test'):
+def build(cx, cy, r_in, p, n, l, label=True, title='', msg='test'):
     w = W * p   # mm, single source for every trace width below
 
     L = mohan.from_spiral(r_in, p, n, w)
@@ -168,6 +188,8 @@ def build(cx, cy, r_in, p, n, l, label=True, msg='test'):
     board.create_items([edge])
     if label:
         board.create_items([make_label(edge, w, p, n, L)])
+    if title:
+        board.create_items([make_title(edge, title)])
 
     board.push_commit(commit, msg)
 
@@ -178,10 +200,10 @@ def main():
     if erase == 'yes':
         erase_board()
 
-    cx, cy, r_in, p, n, l, label = get_params()
+    cx, cy, r_in, p, n, l, label, title = get_params()
     msg = input("Enter commit: ") or 'test'
 
-    build(cx, cy, r_in, p, n, l, label, msg)
+    build(cx, cy, r_in, p, n, l, label, title, msg)
 
 if __name__ == '__main__':
     main()
