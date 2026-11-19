@@ -35,33 +35,35 @@ def make_via(x, y, drill_mm=0.3, pad_mm=0.6, mask_mm=None):
         layer.size = Vector2.from_xy_mm(pad_mm, pad_mm)
 
     if mask_mm is not None:     # untent both sides, opening = pad + 2*mask_mm
-        v.padstack.front_outer_layers.solder_mask_mode = SolderMaskMode.SMM_UNMASKED
-        v.padstack.front_outer_layers.solder_mask_settings.solder_mask_margin = from_mm(mask_mm)
+        for side in (v.padstack.front_outer_layers, v.padstack.back_outer_layers):
+            side.solder_mask_mode = SolderMaskMode.SMM_UNMASKED
+            side.solder_mask_settings.solder_mask_margin = from_mm(mask_mm)
 
     return v
 
-def make_test_pads(cx, cy, r_in, p, n, l, spiral_end, width_mm=0.25):
+def make_test_pads(cx, cy, r_in, p, n, l, spiral_end, width_mm=0.25, pad_pitch_mm=2.54):
     x_ext = cx + r_in + p*n + l
+    d = pad_pitch_mm / 2        # pads sit at cy -/+ d, so they end up pad_pitch_mm apart
 
     bot_pts = [
         (cx + r_in, cy),
         (x_ext,     cy),
-        (x_ext + 1, cy - 1),
+        (x_ext + d, cy - d),
     ]
 
     sx, sy = spiral_end
     top_pts = [
         (sx,        sy),
         (x_ext,     cy),
-        (x_ext + 1, cy + 1),
+        (x_ext + d, cy + d),
     ]
 
     tracks = (make_polyline(bot_pts, width_mm, BoardLayer.BL_B_Cu) +
               make_polyline(top_pts, width_mm, BoardLayer.BL_F_Cu))
 
-    # test pad vias at the end of each trace
-    pads = [make_via(*bot_pts[-1], drill_mm=0.6, pad_mm=1.2, mask_mm=0.5),
-            make_via(*top_pts[-1], drill_mm=0.6, pad_mm=1.2, mask_mm=0.5)]
+    # test pad vias at the end of each trace, sized for a single 0.64 mm Dupont / 0.1" header pin
+    pads = [make_via(*bot_pts[-1], drill_mm=1.0, pad_mm=1.7, mask_mm=0.1),
+            make_via(*top_pts[-1], drill_mm=1.0, pad_mm=1.7, mask_mm=0.1)]
 
     return tracks, pads
 
