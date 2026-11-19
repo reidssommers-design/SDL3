@@ -5,7 +5,6 @@ from kipy.proto.board.board_types_pb2 import BoardLayer, SolderMaskMode
 from kipy.util.units import from_mm
 
 import numpy as np
-import os
 
 import mohan
 
@@ -120,15 +119,7 @@ def erase_board():
     board.remove_items(items)
     board.push_commit(commit, "Erase entire PCB")
 
-def main():
-    os.system('clear')
-
-    erase = input('Do you want to erase the board? (yes/n) ')
-    if erase == 'yes':
-        erase_board()
-
-    cx, cy, r_in, p, n, l = get_params()
-
+def build(cx, cy, r_in, p, n, l, msg='test'):
     w = W * p   # mm, single source for every trace width below
 
     L = mohan.from_spiral(r_in, p, n, w)
@@ -147,6 +138,19 @@ def main():
     board.create_items(test_pads)
     board.create_items([make_outline(tracks + test_trace, via + test_pads)])
 
-    board.push_commit(commit, input("Enter commit: ") or 'test')
+    board.push_commit(commit, msg)
 
-main()
+    return L
+
+def main():
+    erase = input('Do you want to erase the board? (yes/n) ')
+    if erase == 'yes':
+        erase_board()
+
+    cx, cy, r_in, p, n, l = get_params()
+    msg = input("Enter commit: ") or 'test'
+
+    build(cx, cy, r_in, p, n, l, msg)
+
+if __name__ == '__main__':
+    main()
