@@ -6,6 +6,8 @@ from kipy.util.units import from_mm
 
 import numpy as np
 
+import mohan
+
 # Connect to a running KiCad PCB Editor session
 kicad = KiCad()
 board = kicad.get_board()
@@ -30,7 +32,7 @@ def make_via(x, y, drill_mm=0.3, pad_mm=0.6, mask_mm=None):
     for layer in v.padstack.copper_layers:
         layer.size = Vector2.from_xy_mm(pad_mm, pad_mm)
 
-    if mask_mm is not None:     # untent front side, opening = pad + 2*mask_mm
+    if mask_mm is not None:     # untent both sides, opening = pad + 2*mask_mm
         v.padstack.front_outer_layers.solder_mask_mode = SolderMaskMode.SMM_UNMASKED
         v.padstack.front_outer_layers.solder_mask_settings.solder_mask_margin = from_mm(mask_mm)
 
@@ -122,6 +124,9 @@ def main():
         erase_board()
 
     cx, cy, r_in, p, n, l = get_params()
+
+    L = mohan.from_spiral(r_in, p, n, w=0.25)
+    print(f'L = {L*1e6:.4f} µH')
 
     pts = calc_spiral(cx, cy, r_in, p, n)
 
