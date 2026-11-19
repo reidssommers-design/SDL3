@@ -1,7 +1,7 @@
 from kipy import KiCad
-from kipy.board_types import Track, Via
+from kipy.board_types import Track, Via, BoardRectangle
 from kipy.geometry import Vector2
-from kipy.proto.board.board_types_pb2 import BoardLayer
+from kipy.proto.board.board_types_pb2 import BoardLayer, SolderMaskMode
 from kipy.util.units import from_mm
 
 import numpy as np
@@ -23,17 +23,22 @@ def make_track(p0, p1, width_mm=0.25, layer=BoardLayer.BL_F_Cu):
 def make_polyline(pts, width_mm=0.25, layer=BoardLayer.BL_F_Cu):
     return [make_track(a, b, width_mm, layer) for a, b in zip(pts[:-1], pts[1:])]
 
-def make_via(x, y, drill_mm=0.3, pad_mm=0.6):
+def make_via(x, y, drill_mm=0.3, pad_mm=0.6, mask_mm=None):
     v = Via()
     v.position = Vector2.from_xy_mm(x, y)
     v.padstack.drill.diameter = Vector2.from_xy_mm(drill_mm, drill_mm)
     for layer in v.padstack.copper_layers:
         layer.size = Vector2.from_xy_mm(pad_mm, pad_mm)
 
+    if mask_mm is not None:     # untent both sides, opening = pad + 2*mask_mm
+        v.padstack.front_outer_layers.solder_mask_mode = SolderMaskMode.SMM_UNMASKED
+        v.padstack.front_outer_layers.solder_mask_settings.solder_mask_margin = from_mm(mask_mm)
+
     return v
 
 def make_test_pads(cx, cy, r_in, p, n, l, spiral_end, width_mm=0.25):
     x_ext = cx + r_in + p*n + l
+
     bot_pts = [
         (cx + r_in, cy),
         (x_ext,     cy),
@@ -51,10 +56,33 @@ def make_test_pads(cx, cy, r_in, p, n, l, spiral_end, width_mm=0.25):
               make_polyline(top_pts, width_mm, BoardLayer.BL_F_Cu))
 
     # test pad vias at the end of each trace
-    pads = [make_via(*bot_pts[-1], drill_mm=0.6, pad_mm=1.2),
-            make_via(*top_pts[-1], drill_mm=0.6, pad_mm=1.2)]
+    pads = [make_via(*bot_pts[-1], drill_mm=0.6, pad_mm=1.2, mask_mm=0.5),
+            make_via(*top_pts[-1], drill_mm=0.6, pad_mm=1.2, mask_mm=0.5)]
 
     return tracks, pads
+
+def make_outline(tracks, vias, margin_mm=6, line_mm=0.1):
+    # bounding box of all copper (nm), including trace half-widths and via pad radii
+    xs, ys = [], []
+    for t in tracks:
+        h = t.width // 2
+        for pt in (t.start, t.end):
+            xs += [pt.x - h, pt.x + h]
+            ys += [pt.y - h, pt.y + h]
+    for v in vias:
+        h = v.padstack.copper_layers[0].size.x // 2
+        xs += [v.position.x - h, v.position.x + h]
+        ys += [v.position.y - h, v.position.y + h]
+
+    m = from_mm(margin_mm)
+    edge = BoardRectangle()
+    edge.top_left     = Vector2.from_xy(min(xs) - m, min(ys) - m)
+    edge.bottom_right = Vector2.from_xy(max(xs) + m, max(ys) + m)
+    edge.layer = BoardLayer.BL_Edge_Cuts
+    edge.attributes.stroke.width = from_mm(line_mm)
+    edge.attributes.fill.filled = False
+
+    return edge
 
 def get_params():
     cx   = float(input('Enter the x center [100]: ') or 100)
@@ -88,6 +116,7 @@ def main():
     board.create_items(via)
     board.create_items(test_trace)
     board.create_items(test_pads)
+    board.create_items([make_outline(tracks + test_trace, via + test_pads)])
 
     board.push_commit(commit, input("Enter commit: ") or 'test')
 
