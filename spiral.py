@@ -5,6 +5,7 @@ from kipy.proto.board.board_types_pb2 import BoardLayer, SolderMaskMode
 from kipy.util.units import from_mm
 
 import numpy as np
+import os
 
 import mohan
 
@@ -13,6 +14,7 @@ kicad = KiCad()
 board = kicad.get_board()
 
 SEG = 360 # segments/turn
+W   = 0.5 # trace width as a fraction of pitch (0.5 -> trace = gap)
 
 def make_track(p0, p1, width_mm=0.25, layer=BoardLayer.BL_F_Cu):
     t = Track()
@@ -119,20 +121,24 @@ def erase_board():
     board.push_commit(commit, "Erase entire PCB")
 
 def main():
+    os.system('clear')
+
     erase = input('Do you want to erase the board? (yes/n) ')
     if erase == 'yes':
         erase_board()
 
     cx, cy, r_in, p, n, l = get_params()
 
-    L = mohan.from_spiral(r_in, p, n, w=0.25)
+    w = W * p   # mm, single source for every trace width below
+
+    L = mohan.from_spiral(r_in, p, n, w)
     print(f'L = {L*1e6:.4f} µH')
 
     pts = calc_spiral(cx, cy, r_in, p, n)
 
-    tracks = make_polyline(pts)
+    tracks = make_polyline(pts, w)
     via = [make_via(cx + r_in, cy)]
-    test_trace, test_pads = make_test_pads(cx, cy, r_in, p, n, l, pts[-1])
+    test_trace, test_pads = make_test_pads(cx, cy, r_in, p, n, l, pts[-1], w)
 
     commit = board.begin_commit()
     board.create_items(tracks)
