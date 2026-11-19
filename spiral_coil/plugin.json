@@ -1,0 +1,30 @@
+{
+    "$schema": "https://go.kicad.org/api/schemas/v1",
+    "identifier": "io.github.reidssommers-design.spiral-coil",
+    "name": "Spiral Inductor",
+    "description": "Generates a planar Archimedean spiral inductor with test pads, board outline and a Mohan inductance estimate.",
+    "runtime": {
+        "type": "python",
+        "min_version": "3.9"
+    },
+    "actions": [
+        {
+            "identifier": "spiral-gui",
+            "name": "Spiral Inductor",
+            "description": "Open the spiral inductor generator",
+            "show-button": true,
+            "scopes": [
+                "pcb"
+            ],
+            "entrypoint": "spiral_gui.py",
+            "icons-light": [
+                "icons/spiral-24.png",
+                "icons/spiral-48.png"
+            ],
+            "icons-dark": [
+                "icons/spiral-24-dark.png",
+                "icons/spiral-48-dark.png"
+            ]
+        }
+    ]
+}
