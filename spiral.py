@@ -34,8 +34,9 @@ def make_via(x, y, drill_mm=0.3, pad_mm=0.6, mask_mm=None):
         layer.size = Vector2.from_xy_mm(pad_mm, pad_mm)
 
     if mask_mm is not None:     # untent both sides, opening = pad + 2*mask_mm
-        v.padstack.front_outer_layers.solder_mask_mode = SolderMaskMode.SMM_UNMASKED
-        v.padstack.front_outer_layers.solder_mask_settings.solder_mask_margin = from_mm(mask_mm)
+        for side in (v.padstack.front_outer_layers, v.padstack.back_outer_layers):
+            side.solder_mask_mode = SolderMaskMode.SMM_UNMASKED
+            side.solder_mask_settings.solder_mask_margin = from_mm(mask_mm)
 
     return v
 
@@ -64,7 +65,7 @@ def make_test_pads(cx, cy, r_in, p, n, l, spiral_end, width_mm=0.25):
 
     return tracks, pads
 
-def make_outline(tracks, vias, margin_mm=6, line_mm=0.1):
+def make_outline(tracks, vias, margin_mm=4, line_mm=0.1):
     # bounding box of all copper (nm), including trace half-widths and via pad radii
     xs, ys = [], []
     for t in tracks:
