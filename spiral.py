@@ -1,7 +1,8 @@
 from kipy import KiCad
-from kipy.board_types import Track, Via, BoardRectangle
+from kipy.board_types import Track, Via, BoardRectangle, BoardText
 from kipy.geometry import Vector2
 from kipy.proto.board.board_types_pb2 import BoardLayer, SolderMaskMode
+from kipy.proto.common.types.enums_pb2 import HorizontalAlignment, VerticalAlignment
 from kipy.util.units import from_mm
 
 import numpy as np
@@ -34,9 +35,8 @@ def make_via(x, y, drill_mm=0.3, pad_mm=0.6, mask_mm=None):
         layer.size = Vector2.from_xy_mm(pad_mm, pad_mm)
 
     if mask_mm is not None:     # untent both sides, opening = pad + 2*mask_mm
-        for side in (v.padstack.front_outer_layers, v.padstack.back_outer_layers):
-            side.solder_mask_mode = SolderMaskMode.SMM_UNMASKED
-            side.solder_mask_settings.solder_mask_margin = from_mm(mask_mm)
+        v.padstack.front_outer_layers.solder_mask_mode = SolderMaskMode.SMM_UNMASKED
+        v.padstack.front_outer_layers.solder_mask_settings.solder_mask_margin = from_mm(mask_mm)
 
     return v
 
@@ -65,7 +65,7 @@ def make_test_pads(cx, cy, r_in, p, n, l, spiral_end, width_mm=0.25):
 
     return tracks, pads
 
-def make_outline(tracks, vias, margin_mm=4, line_mm=0.1):
+def make_outline(tracks, vias, margin_mm=6, line_mm=0.1):
     # bounding box of all copper (nm), including trace half-widths and via pad radii
     xs, ys = [], []
     for t in tracks:
@@ -88,15 +88,43 @@ def make_outline(tracks, vias, margin_mm=4, line_mm=0.1):
 
     return edge
 
+def make_label(edge, w, p, n, L, size_mm=1.0, inset_mm=1.0):
+    # silkscreen info block, anchored to the outline's lower-right corner
+    bw = (edge.bottom_right.x - edge.top_left.x) / 1e6     # nm -> mm
+    bh = (edge.bottom_right.y - edge.top_left.y) / 1e6
+
+    t = BoardText()
+    t.value = (f'{bw:.1f} x {bh:.1f} mm\n'
+               f'w {w:.2f} / s {p - w:.2f} mm\n'
+               f'N = {n}\n'
+               f'L = {L*1e6:.2f} µH')
+    t.layer = BoardLayer.BL_F_SilkS
+
+    inset = from_mm(inset_mm)
+    t.position = Vector2.from_xy(edge.bottom_right.x - inset, edge.bottom_right.y - inset)
+
+    a = t.attributes
+    a.multiline = True
+    a.line_spacing = 1.0        # proto default is 0 -> all lines drawn on top of each other
+    a.size = Vector2.from_xy_mm(size_mm, size_mm)
+    a.stroke_width = from_mm(0.15)
+    a.horizontal_alignment = HorizontalAlignment.HA_RIGHT
+    a.vertical_alignment   = VerticalAlignment.VA_BOTTOM
+
+    return t
+
 def get_params():
     cx   = float(input('Enter the x center [100]: ') or 100)
     cy   = float(input('Enter the y center [100]: ') or 100)
-    r_in = float(input('Enter inner radius [2]: ') or 2)        # mm
-    p    = float(input('Enter the pitch [0.5]: ') or 0.5)       # mm
-    n    = int(input('Enter the number of turns [20]: ') or 20) # integer
+    r_in = float(input('Enter inner radius: ') or 2)       # mm
+    p    = float(input('Enter the pitch: ') or 0.5)        # mm
+    n    = int(input('Enter the number of turns: ') or 20) # integer
+
     l    = float(input('Enter the length of test pad: ') or 5)
 
-    return cx, cy, r_in, p, n, l
+    label = (input('Print info label? (y/n) [y]: ') or 'y') == 'y'
+
+    return cx, cy, r_in, p, n, l, label
 
 def calc_spiral(cx, cy, r_in, p, n):
     th = np.linspace(0, 2*np.pi*n, n*SEG + 1)
@@ -119,7 +147,7 @@ def erase_board():
     board.remove_items(items)
     board.push_commit(commit, "Erase entire PCB")
 
-def build(cx, cy, r_in, p, n, l, msg='test'):
+def build(cx, cy, r_in, p, n, l, label=True, msg='test'):
     w = W * p   # mm, single source for every trace width below
 
     L = mohan.from_spiral(r_in, p, n, w)
@@ -136,7 +164,10 @@ def build(cx, cy, r_in, p, n, l, msg='test'):
     board.create_items(via)
     board.create_items(test_trace)
     board.create_items(test_pads)
-    board.create_items([make_outline(tracks + test_trace, via + test_pads)])
+    edge = make_outline(tracks + test_trace, via + test_pads)
+    board.create_items([edge])
+    if label:
+        board.create_items([make_label(edge, w, p, n, L)])
 
     board.push_commit(commit, msg)
 
@@ -147,10 +178,10 @@ def main():
     if erase == 'yes':
         erase_board()
 
-    cx, cy, r_in, p, n, l = get_params()
+    cx, cy, r_in, p, n, l, label = get_params()
     msg = input("Enter commit: ") or 'test'
 
-    build(cx, cy, r_in, p, n, l, msg)
+    build(cx, cy, r_in, p, n, l, label, msg)
 
 if __name__ == '__main__':
     main()

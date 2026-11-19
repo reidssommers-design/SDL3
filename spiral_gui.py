@@ -37,7 +37,11 @@ ttk.Label(frm, textvariable=L_text, font=('TkDefaultFont', 11, 'bold')).grid(
 
 erase = tk.BooleanVar(value=True)
 ttk.Checkbutton(frm, text='Erase board first', variable=erase).grid(
-    row=row + 1, column=0, columnspan=2, sticky='w', pady=(10, 0))
+    row=row + 1, column=0, sticky='w', pady=(10, 0))
+
+label = tk.BooleanVar(value=True)
+ttk.Checkbutton(frm, text='Info label', variable=label).grid(
+    row=row + 1, column=1, sticky='w', pady=(10, 0))
 
 status = tk.StringVar()
 ttk.Label(frm, textvariable=status, foreground='gray').grid(
@@ -76,7 +80,7 @@ def refresh():
         if erase.get():
             spiral.erase_board()
         L = spiral.build(v['cx'], v['cy'], v['r_in'], v['p'], v['n'], v['l'],
-                         msg='Spiral GUI refresh')
+                         label=label.get(), msg='Spiral GUI refresh')
         status.set(f'Board updated  (L = {L*1e6:.4f} µH)')
     except Exception as e:
         status.set('Failed')
