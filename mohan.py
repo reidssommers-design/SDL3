@@ -7,7 +7,6 @@ shapes = {
     'circular':  [1.00, 2.46, 0.00, 0.20],
     }
 
-
 names = list(shapes.keys())
 for i, key in enumerate(names):
     print(i + 1, " ", key)
